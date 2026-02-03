@@ -9,7 +9,7 @@ This is step 1 of the automation pipeline: **discover work that needs planning**
 - Repositories are tracked in a plain text file: `repositories.txt`
 - Each line contains one repo in the format: `owner/repo`
 - Lines starting with `#` should be ignored
-- We will use GitHub labels to drive the workflow (`llemy-plan`, `llemy-ready`, `llemy-done`)
+- We will use GitHub labels to drive the workflow (`llemy-plan`, `llemy-todo`, `llemy-done`)
 - We will use the `gh` CLI (already authenticated) to query issues
 
 ## Requirements
@@ -20,7 +20,7 @@ This is step 1 of the automation pipeline: **discover work that needs planning**
 
 ## Behaviour
 For each repository in `repositories.txt`:
-- Query issues labeled `lemmy-plan`
+- Query issues labeled `llemy-plan`
 - Only include **open** issues (default in `gh issue list`, but ensure it)
 - Collect at least:
   - repo (`owner/repo`)
@@ -71,6 +71,16 @@ Support these env vars with defaults:
 ## Notes for Planner (Claude)
 - Output must be **implementation plan + Codex work order + review packet spec** (per our workflow)
 - Do not write implementation code; that is a task for Codex
+
+## Notes for Implementer (Codex)
+For every `llemy-todo` issue:
+- Create a feature branch
+- Implement the issue exactly as written
+- Commit all changes
+- Push the branch to origin
+- Add a completion comment summarising changes
+- Do not merge
+- Do not use sandbox CLI - always use the real `gh` CLI tool
 
 ## Labels
 - `llemy-plan`
