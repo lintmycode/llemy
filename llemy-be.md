@@ -79,6 +79,7 @@ For every `llemy-todo` issue:
 - Commit all changes
 - Push the branch to origin
 - Add a completion comment summarising changes
+- Label the issue `llemy-done` and remove `llemy-todo`
 - Do not merge
 - Do not use sandbox CLI - always use the real `gh` CLI tool
 
