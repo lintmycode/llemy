@@ -41,7 +41,7 @@ Produce a **GitHub issue** that serves as the complete implementation plan and h
 
 Write this issue to:
 
-`.llemy/todo/<repo>_<issue-number>.md`
+`.llemy/todo/<repo>_<issue-number>_todo.md`
 
 ### FORMAT (MUST MATCH EXACTLY)
 
@@ -85,3 +85,14 @@ BODY:
 
 ## Stop conditions
 - When the task is considered complete
+
+## Workflow instructions for Codex
+For every `llemy-todo` issue:
+- Create a feature branch
+- Implement the issue exactly as written
+- Commit all changes
+- Push the branch to origin
+- Add a completion comment summarising changes
+- Label the issue `llemy-done` and remove `llemy-todo`
+- Do not merge
+- Do not use sandbox CLI - always use the real `gh` CLI tool
