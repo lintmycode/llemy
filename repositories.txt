@@ -1,2 +1,0 @@
-lintmycode/llemy
-lintmycode/borealis

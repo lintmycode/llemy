@@ -5,26 +5,7 @@ const { execFile } = require('child_process');
 const { existsSync, mkdirSync, readFileSync, writeFileSync } = require('fs');
 const { join } = require('path');
 const https = require('https');
-
-// Load .env file
-function loadEnv() {
-  const envPath = join(process.cwd(), '.env');
-  if (existsSync(envPath)) {
-    const envContent = readFileSync(envPath, 'utf8');
-    envContent.split('\n').forEach(line => {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) return;
-      const match = trimmed.match(/^([^=]+)=(.*)$/);
-      if (match) {
-        const key = match[1].trim();
-        const value = match[2].trim().replace(/^["']|["']$/g, '').split('#')[0].trim();
-        if (value && !process.env[key]) {
-          process.env[key] = value;
-        }
-      }
-    });
-  }
-}
+const { loadEnv } = require('./lib/load-env');
 
 loadEnv();
 

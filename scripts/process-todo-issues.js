@@ -4,6 +4,9 @@
 const { execFile } = require('child_process');
 const { readFileSync } = require('fs');
 const { join } = require('path');
+const { loadEnv } = require('./lib/load-env');
+
+loadEnv();
 
 function die(message) {
   process.stderr.write(`${message}\n`);

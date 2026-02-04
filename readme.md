@@ -38,6 +38,28 @@ Scripts will automate discovery and handoff.
 
 ## USAGE
 
+### Initialize in current repo
+
+Set up local folders and required GitHub labels for the repository in your current working directory.
+
+```bash
+node scripts/llemy-init.js
+```
+
+**What it does:**
+- Creates `.llemy/`, `.llemy/plan/`, `.llemy/todo/`, `.llemy/logs/`, and `.llemy/.env`
+- Creates/updates labels: `llemy-plan`, `llemy-planned`, `llemy-todo`, `llemy-done`
+
+**Requirements:**
+- `gh` CLI authenticated
+- Command run inside a GitHub repo
+
+**Optional:**
+- Set `LLEMY_REPO=owner/name` to target a different repo explicitly
+- Put LLEMY settings in `.llemy/.env` (loaded automatically by all scripts)
+
+---
+
 ### Planning Workflow (llemy-plan → llemy-todo)
 
 Process GitHub issues labeled `llemy-plan` and convert them to `llemy-todo` implementation plans.
@@ -70,16 +92,16 @@ Process GitHub issues labeled `llemy-plan` and convert them to `llemy-todo` impl
    - Continues to next issue
 
 **Output:**
-- All output logged to `logs/plan.log`
+- All output logged to `.llemy/logs/plan.log`
 - Plan files: `.llemy/plan/`
 - Todo files: `.llemy/todo/`
 
 **Requirements:**
 - `gh` CLI authenticated
-- Repos listed in `repositories.txt`
+- Run from inside the target GitHub repo (or set `LLEMY_REPO=owner/name`)
 - Claude Code running in VSCode
 
-**Note:** For fully hands-off automation, set `ANTHROPIC_API_KEY` in `.env` and use `scripts/process-plan-issues_api.js` (requires API credits).
+**Note:** For fully hands-off automation, set `ANTHROPIC_API_KEY` in `.llemy/.env` and use `scripts/process-plan-issues_api.js` (requires API credits).
 
 ---
 
@@ -114,12 +136,12 @@ Process GitHub issues labeled `llemy-todo` and implement them using Codex.
    - Continues to next issue
 
 **Output:**
-- All output logged to `logs/do.log`
+- All output logged to `.llemy/logs/do.log`
 - Todo files: `.llemy/todo/`
 
 **Requirements:**
 - `gh` CLI authenticated
-- Repos listed in `repositories.txt`
+- Run from inside the target GitHub repo (or set `LLEMY_REPO=owner/name`)
 - Codex running and ready to implement
 
 **Note:** Codex should follow the workflow instructions in each todo file to create branch, implement, commit, push, and label the issue.

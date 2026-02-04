@@ -2,8 +2,11 @@
 'use strict';
 
 const { execFile } = require('child_process');
-const { mkdirSync, readFileSync, writeFileSync } = require('fs');
+const { mkdirSync, writeFileSync } = require('fs');
 const { dirname, join } = require('path');
+const { loadEnv } = require('./lib/load-env');
+
+loadEnv();
 
 function die(message) {
   process.stderr.write(`${message}\n`);
@@ -28,26 +31,6 @@ function runGh(args) {
   });
 }
 
-function readRepositories(filePath) {
-  let raw = '';
-  try {
-    raw = readFileSync(filePath, 'utf8');
-  } catch {
-    die('repositories.txt not found or empty');
-  }
-
-  const repos = raw
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('#'));
-
-  if (!repos.length) {
-    die('repositories.txt not found or empty');
-  }
-
-  return repos;
-}
-
 async function assertGhReady() {
   try {
     await runGh(['--version']);
@@ -55,6 +38,32 @@ async function assertGhReady() {
   } catch {
     die('gh CLI not available or not authenticated');
   }
+}
+
+async function resolveCurrentRepo() {
+  const fromEnv = String(process.env.LLEMY_REPO || '').trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+
+  let json = '';
+  try {
+    json = await runGh(['repo', 'view', '--json', 'nameWithOwner']);
+  } catch {
+    die('Unable to resolve current repository. Run inside a GitHub repo or set LLEMY_REPO=owner/name');
+  }
+
+  try {
+    const parsed = JSON.parse(json);
+    const repo = typeof parsed.nameWithOwner === 'string' ? parsed.nameWithOwner.trim() : '';
+    if (repo) {
+      return repo;
+    }
+  } catch {
+    // Fall through to die below.
+  }
+
+  die('Unable to resolve current repository. Run inside a GitHub repo or set LLEMY_REPO=owner/name');
 }
 
 async function fetchRepoIssues(repo, label, limit) {
@@ -120,8 +129,8 @@ async function main() {
   const concurrency = toPositiveInt(process.env.CONCURRENCY, 3);
   const outputFile = process.env.OUTPUT_FILE || join('.llemy', 'llemy-plan-issues.json');
 
-  const repos = readRepositories(join(process.cwd(), 'repositories.txt'));
   await assertGhReady();
+  const repos = [await resolveCurrentRepo()];
 
   const issues = [];
   const issuesByRepo = new Map();

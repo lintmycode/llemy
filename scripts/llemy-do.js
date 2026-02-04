@@ -4,6 +4,9 @@
 const { spawn } = require('child_process');
 const { createWriteStream, mkdirSync } = require('fs');
 const { join } = require('path');
+const { loadEnv } = require('./lib/load-env');
+
+loadEnv();
 
 function die(message) {
   process.stderr.write(`${message}\n`);
@@ -15,7 +18,7 @@ function now() {
 }
 
 function createLogger(logPath) {
-  mkdirSync(join(process.cwd(), 'logs'), { recursive: true });
+  mkdirSync(join(process.cwd(), '.llemy', 'logs'), { recursive: true });
   const stream = createWriteStream(logPath, { flags: 'a' });
 
   function info(message, options = {}) {
@@ -84,7 +87,7 @@ function runStep(scriptName, logger) {
 }
 
 async function main() {
-  const logger = createLogger(join(process.cwd(), 'logs', 'do.log'));
+  const logger = createLogger(join(process.cwd(), '.llemy', 'logs', 'do.log'));
   logger.info('Starting llemy-do flow');
   try {
     logger.info('Running scan-todo-issues.js');

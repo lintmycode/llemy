@@ -4,6 +4,9 @@
 const { spawn } = require('child_process');
 const { join } = require('path');
 const { mkdirSync, createWriteStream } = require('fs');
+const { loadEnv } = require('./lib/load-env');
+
+loadEnv();
 
 function die(message) {
   process.stderr.write(`${message}\n`);
@@ -49,7 +52,7 @@ function runStep(scriptName, logStream) {
 }
 
 async function main() {
-  const logsDir = join(process.cwd(), 'logs');
+  const logsDir = join(process.cwd(), '.llemy', 'logs');
   mkdirSync(logsDir, { recursive: true });
 
   const logPath = join(logsDir, 'plan.log');
