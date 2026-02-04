@@ -1,0 +1,14 @@
+{
+  "name": "llemy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LLEMY local CLI wrapper",
+  "bin": {
+    "llemy": "bin/llemy.js"
+  },
+  "scripts": {
+    "llemy:init": "node scripts/llemy-init.js",
+    "llemy:plan": "node scripts/llemy-plan.js",
+    "llemy:do": "node scripts/llemy-do.js"
+  }
+}
