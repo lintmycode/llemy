@@ -116,8 +116,9 @@ function taskFileName(repo, number) {
 
 function writeTaskFiles(taskDir, issues) {
   mkdirSync(taskDir, { recursive: true });
-  for (const issue of issues) {
-    const path = join(taskDir, taskFileName(issue.repo, issue.number));
+  if (issues.length > 0) {
+    const issue = issues[0];
+    const path = join(taskDir, 'current-task.md');
     writeFileSync(path, `${issue.body || ''}\n`, 'utf8');
   }
 }
@@ -141,7 +142,7 @@ async function main() {
   const issueLimit = toPositiveInt(process.env.ISSUE_LIMIT, 50);
   const concurrency = toPositiveInt(process.env.CONCURRENCY, 3);
   const outputFile = process.env.OUTPUT_FILE || join('.llemy', 'llemy-todo-issues.json');
-  const taskDir = process.env.TASK_DIR || join('.llemy', 'todo-tasks');
+  const taskDir = process.env.TASK_DIR || join('.llemy', 'tmp');
 
   await assertGhReady();
   const repos = [await resolveCurrentRepo()];
