@@ -244,7 +244,7 @@ async function main() {
   const fromLabel = process.env.FROM_LABEL || 'llemy-plan';
   const plannedLabel = process.env.PLANNED_LABEL || 'llemy-planned';
   const todoLabel = process.env.TODO_LABEL || 'llemy-todo';
-  const claudeMdPath = join(process.cwd(), '.claude', 'claude.md');
+  const claudeMdPath = join(process.cwd(), '.llemy', 'planner-policy.md');
 
   const payload = readJsonFile(inputFile);
   const issues = collectIssues(payload);
@@ -254,7 +254,7 @@ async function main() {
   }
 
   if (!existsSync(claudeMdPath)) {
-    die(`Missing CLAUDE.md policy file at ${claudeMdPath}`);
+    die(`Missing planner-policy.md file at ${claudeMdPath}`);
   }
 
   const claudeMdContent = readFileSync(claudeMdPath, 'utf8');

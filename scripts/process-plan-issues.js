@@ -201,9 +201,16 @@ async function main() {
       process.stdout.write(`[${tag}] Writing plan to ${planPath}\n`);
       writePlanFile(planPath, { ...issue, repo: entry.repo });
 
+      const plannerPolicyPath = join(process.cwd(), '.llemy', 'planner-policy.md');
+      const plannerPolicyExists = existsSync(plannerPolicyPath);
+
       process.stdout.write(`[${tag}] Waiting for Claude Code to create ${todoPath}\n`);
       process.stdout.write(`[${tag}] ⏸️  Paused - run this in Claude Code to continue:\n`);
-      process.stdout.write(`[${tag}]    "Process plan file ${planPath} and create ${todoPath}"\n`);
+      if (plannerPolicyExists) {
+        process.stdout.write(`[${tag}]    "Read ${plannerPolicyPath}, then process plan file ${planPath} and create ${todoPath}"\n`);
+      } else {
+        process.stdout.write(`[${tag}]    "Process plan file ${planPath} and create ${todoPath}"\n`);
+      }
 
       // Wait for todo file to be created
       let attempts = 0;

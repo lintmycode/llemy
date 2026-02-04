@@ -2,7 +2,7 @@
 'use strict';
 
 const { execFile } = require('child_process');
-const { readFileSync } = require('fs');
+const { readFileSync, existsSync } = require('fs');
 const { join } = require('path');
 const { loadEnv } = require('./lib/load-env');
 
@@ -96,9 +96,15 @@ async function assertCodexReady() {
   }
 }
 
-function buildImplementationPrompt(issue, repo) {
+function buildImplementationPrompt(issue, repo, executorPolicyContent) {
   const body = issue.body && issue.body.trim() ? issue.body : '_No issue body_';
-  return [
+  const parts = [];
+
+  if (executorPolicyContent) {
+    parts.push('# Executor Policy', '', executorPolicyContent, '', '---', '');
+  }
+
+  parts.push(
     `Implement GitHub issue ${repo}#${issue.number} exactly as written.`,
     `Issue title: ${issue.title || '_Untitled_'}`,
     `Issue URL: ${issue.url}`,
@@ -111,7 +117,9 @@ function buildImplementationPrompt(issue, repo) {
     '- Keep the implementation faithful to the issue text.',
     '- Run any relevant verification commands and include their outcomes.',
     '- Return a concise completion summary with changed files and checks run.'
-  ].join('\n');
+  );
+
+  return parts.join('\n');
 }
 
 async function relabelIssue(repo, number, removeLabel, addLabel) {
@@ -157,12 +165,18 @@ async function main() {
     .split(' ')
     .map((v) => v.trim())
     .filter(Boolean);
+  const executorPolicyPath = join(process.cwd(), '.llemy', 'executor-policy.md');
 
   const payload = readJsonFile(inputFile);
   const issues = collectIssues(payload);
 
   if (!issues.length) {
     die(`No issues to process in ${inputFile}`);
+  }
+
+  let executorPolicyContent = '';
+  if (existsSync(executorPolicyPath)) {
+    executorPolicyContent = readFileSync(executorPolicyPath, 'utf8');
   }
 
   await assertGhReady();
@@ -176,7 +190,7 @@ async function main() {
     try {
       process.stdout.write(`\n[${tag}] Fetching issue...\n`);
       const issue = await fetchIssue(entry.repo, entry.number);
-      const prompt = buildImplementationPrompt(issue, entry.repo);
+      const prompt = buildImplementationPrompt(issue, entry.repo, executorPolicyContent);
       const codexArgs = ['exec', ...codexArgsPrefix, '--cd', process.cwd(), prompt];
 
       process.stdout.write(`[${tag}] Running Codex implementation...\n`);
