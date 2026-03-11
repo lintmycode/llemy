@@ -2,7 +2,7 @@
 'use strict';
 
 const { execFile } = require('child_process');
-const { existsSync, mkdirSync, writeFileSync } = require('fs');
+const { existsSync, mkdirSync, writeFileSync, copyFileSync } = require('fs');
 const { join } = require('path');
 const { loadEnv } = require('./lib/load-env');
 
@@ -67,7 +67,8 @@ function ensureDirectories() {
     join(root, '.llemy'),
     join(root, '.llemy', 'plan'),
     join(root, '.llemy', 'todo'),
-    join(root, '.llemy', 'logs')
+    join(root, '.llemy', 'logs'),
+    join(root, '.llemy', 'policies')
   ];
 
   for (const dir of dirs) {
@@ -102,6 +103,32 @@ function ensureEnvFile(root) {
 
   writeFileSync(envPath, content, 'utf8');
   process.stdout.write(`Created: ${envPath}\n`);
+}
+
+function ensurePolicyFiles(root) {
+  const scriptDir = __dirname;
+  const projectRoot = join(scriptDir, '..');
+  const policiesDir = join(root, '.llemy', 'policies');
+
+  const policies = [
+    { src: join(projectRoot, 'planner-policy.md'), dest: join(policiesDir, 'planner-policy.md') },
+    { src: join(projectRoot, 'executor-policy.md'), dest: join(policiesDir, 'executor-policy.md') }
+  ];
+
+  for (const policy of policies) {
+    if (!existsSync(policy.src)) {
+      process.stderr.write(`Warning: Source policy file not found: ${policy.src}\n`);
+      continue;
+    }
+
+    if (existsSync(policy.dest)) {
+      process.stdout.write(`Exists: ${policy.dest}\n`);
+      continue;
+    }
+
+    copyFileSync(policy.src, policy.dest);
+    process.stdout.write(`Created: ${policy.dest}\n`);
+  }
 }
 
 async function listLabelNames(repo) {
@@ -147,8 +174,10 @@ async function main() {
   const repo = await resolveCurrentRepo();
   process.stdout.write(`Initializing LLEMY for ${repo}\n`);
 
+  const root = process.cwd();
   ensureDirectories();
-  ensureEnvFile(process.cwd());
+  ensureEnvFile(root);
+  ensurePolicyFiles(root);
 
   const labels = [
     { name: 'llemy-plan', color: '0e8a16', description: 'Needs planning by Claude' },

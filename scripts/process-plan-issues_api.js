@@ -130,7 +130,9 @@ async function fetchIssue(repo, number) {
 }
 
 async function createTodoIssue(repo, todoIssue) {
-  const args = ['issue', 'create', '--repo', repo, '--title', todoIssue.title, '--body', todoIssue.body];
+  const rawTitle = String(todoIssue.title || '').trim();
+  const title = rawTitle.startsWith('[llemy]') ? rawTitle : `[llemy] ${rawTitle}`;
+  const args = ['issue', 'create', '--repo', repo, '--title', title, '--body', todoIssue.body];
   for (const label of todoIssue.labels) {
     args.push('--label', label);
   }
@@ -244,7 +246,7 @@ async function main() {
   const fromLabel = process.env.FROM_LABEL || 'llemy-plan';
   const plannedLabel = process.env.PLANNED_LABEL || 'llemy-planned';
   const todoLabel = process.env.TODO_LABEL || 'llemy-todo';
-  const claudeMdPath = join(process.cwd(), '.llemy', 'planner-policy.md');
+  const claudeMdPath = join(process.cwd(), '.llemy', 'policies', 'planner-policy.md');
 
   const payload = readJsonFile(inputFile);
   const issues = collectIssues(payload);
