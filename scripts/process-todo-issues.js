@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const { execFile } = require('child_process');
+const { execFile, spawnSync } = require('child_process');
 const { readFileSync, existsSync } = require('fs');
 const { join } = require('path');
 const { loadEnv } = require('./lib/load-env');
@@ -35,22 +35,19 @@ async function runGh(args) {
   return runCommand('gh', args);
 }
 
-async function runCodex(args, timeoutMs) {
-  return new Promise((resolve, reject) => {
-    execFile(
-      'codex',
-      args,
-      { encoding: 'utf8', maxBuffer: 1024 * 1024 * 50, timeout: timeoutMs },
-      (error, stdout, stderr) => {
-        if (error) {
-          const detail = String(stderr || stdout || error.message || 'unknown error').trim();
-          reject(new Error(detail));
-          return;
-        }
-        resolve(String(stdout || '').trim());
-      }
-    );
+function runClaude(prompt) {
+  const claudeEnv = { ...process.env };
+  delete claudeEnv.CLAUDECODE;
+  delete claudeEnv.CLAUDE_CODE_ENTRYPOINT;
+  delete claudeEnv.ANTHROPIC_API_KEY;
+  const result = spawnSync('claude', ['-p', '--dangerously-skip-permissions', prompt], {
+    stdio: 'inherit',
+    encoding: 'utf8',
+    env: claudeEnv
   });
+  if (result.status !== 0) {
+    throw new Error(`Claude exited with code ${result.status}`);
+  }
 }
 
 function readJsonFile(filePath) {
@@ -88,11 +85,10 @@ async function fetchIssue(repo, number) {
   return issue;
 }
 
-async function assertCodexReady() {
-  try {
-    await runCommand('codex', ['--version']);
-  } catch {
-    die('codex CLI not available');
+function assertClaudeReady() {
+  const result = spawnSync('claude', ['--version'], { encoding: 'utf8' });
+  if (result.status !== 0) {
+    die('claude CLI not available');
   }
 }
 
@@ -160,12 +156,7 @@ async function main() {
   const inputFile = process.env.INPUT_FILE || join('.llemy', 'llemy-todo-issues.json');
   const fromLabel = process.env.FROM_LABEL || 'llemy-todo';
   const doneLabel = process.env.DONE_LABEL || 'llemy-done';
-  const codexTimeoutMs = Number.parseInt(process.env.CODEX_TIMEOUT_MS || '', 10) || 1000 * 60 * 30;
-  const codexArgsPrefix = (process.env.CODEX_ARGS_PREFIX || '--full-auto')
-    .split(' ')
-    .map((v) => v.trim())
-    .filter(Boolean);
-  const executorPolicyPath = join(process.cwd(), '.llemy', 'executor-policy.md');
+  const executorPolicyPath = join(process.cwd(), '.llemy', 'policies', 'executor-policy.md');
 
   const payload = readJsonFile(inputFile);
   const issues = collectIssues(payload);
@@ -180,7 +171,7 @@ async function main() {
   }
 
   await assertGhReady();
-  await assertCodexReady();
+  assertClaudeReady();
 
   const failures = [];
   let completed = 0;
@@ -191,15 +182,12 @@ async function main() {
       process.stdout.write(`\n[${tag}] Fetching issue...\n`);
       const issue = await fetchIssue(entry.repo, entry.number);
       const prompt = buildImplementationPrompt(issue, entry.repo, executorPolicyContent);
-      const codexArgs = ['exec', ...codexArgsPrefix, '--cd', process.cwd(), prompt];
 
-      process.stdout.write(`[${tag}] Running Codex implementation...\n`);
-      const implementationSummaryRaw = await runCodex(codexArgs, codexTimeoutMs);
-      const implementationSummary =
-        implementationSummaryRaw.trim() || 'Implementation completed. (No summary text returned)';
+      process.stdout.write(`[${tag}] Running Claude implementation...\n`);
+      runClaude(prompt);
 
       process.stdout.write(`[${tag}] Adding completion comment...\n`);
-      const comment = `✅ Implementation completed by Codex\n\n${implementationSummary}`;
+      const comment = `✅ Implementation completed by Claude`;
       await addIssueComment(entry.repo, entry.number, comment);
 
       process.stdout.write(`[${tag}] Relabeling issue...\n`);

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const { execFile } = require('child_process');
+const { execFile, spawnSync } = require('child_process');
 const { existsSync, mkdirSync, readFileSync, writeFileSync } = require('fs');
 const { join } = require('path');
 const { loadEnv } = require('./lib/load-env');
@@ -129,7 +129,9 @@ async function fetchIssue(repo, number) {
 }
 
 async function createTodoIssue(repo, todoIssue) {
-  const args = ['issue', 'create', '--repo', repo, '--title', todoIssue.title, '--body', todoIssue.body];
+  const rawTitle = String(todoIssue.title || '').trim();
+  const title = rawTitle.startsWith('[llemy]') ? rawTitle : `[llemy] ${rawTitle}`;
+  const args = ['issue', 'create', '--repo', repo, '--title', title, '--body', todoIssue.body];
   for (const label of todoIssue.labels) {
     args.push('--label', label);
   }
@@ -201,27 +203,29 @@ async function main() {
       process.stdout.write(`[${tag}] Writing plan to ${planPath}\n`);
       writePlanFile(planPath, { ...issue, repo: entry.repo });
 
-      const plannerPolicyPath = join(process.cwd(), '.llemy', 'planner-policy.md');
+      const plannerPolicyPath = join('.llemy', 'policies', 'planner-policy.md');
       const plannerPolicyExists = existsSync(plannerPolicyPath);
 
-      process.stdout.write(`[${tag}] Waiting for Claude Code to create ${todoPath}\n`);
-      process.stdout.write(`[${tag}] ⏸️  Paused - run this in Claude Code to continue:\n`);
-      if (plannerPolicyExists) {
-        process.stdout.write(`[${tag}]    "Read ${plannerPolicyPath}, then process plan file ${planPath} and create ${todoPath}"\n`);
-      } else {
-        process.stdout.write(`[${tag}]    "Process plan file ${planPath} and create ${todoPath}"\n`);
-      }
+      const claudePrompt = plannerPolicyExists
+        ? `Read ${plannerPolicyPath}, then process plan file ${planPath} and create ${todoPath}`
+        : `Process plan file ${planPath} and create ${todoPath}`;
 
-      // Wait for todo file to be created
-      let attempts = 0;
-      const maxAttempts = 120; // 10 minutes
-      while (!existsSync(todoPath) && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        attempts++;
+      process.stdout.write(`[${tag}] Running Claude...\n`);
+      const claudeEnv = { ...process.env };
+      delete claudeEnv.CLAUDECODE;
+      delete claudeEnv.CLAUDE_CODE_ENTRYPOINT;
+      delete claudeEnv.ANTHROPIC_API_KEY;
+      const result = spawnSync('claude', ['-p', '--dangerously-skip-permissions', claudePrompt], {
+        stdio: 'inherit',
+        encoding: 'utf8',
+        env: claudeEnv
+      });
+      if (result.status !== 0) {
+        throw new Error(`Claude exited with code ${result.status}`);
       }
 
       if (!existsSync(todoPath)) {
-        throw new Error(`Timeout waiting for ${todoPath} to be created`);
+        throw new Error(`Claude did not create ${todoPath}`);
       }
 
       process.stdout.write(`[${tag}] ✓ Todo file detected, continuing...\n`);
