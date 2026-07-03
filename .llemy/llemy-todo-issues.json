@@ -1,0 +1,20 @@
+{
+  "generatedAt": "2026-03-11T17:04:05.218Z",
+  "label": "llemy-todo",
+  "repos": [
+    "lintmycode/llemy"
+  ],
+  "issues": [
+    {
+      "repo": "lintmycode/llemy",
+      "number": 18,
+      "title": "[llemy] [llemy-test] Create hello.txt with \"hello world\"",
+      "url": "https://github.com/lintmycode/llemy/issues/18",
+      "updatedAt": "2026-03-11T17:04:01Z",
+      "labels": [
+        "llemy-todo"
+      ],
+      "body": "# Implementation Plan\n\n## Objective\n- A file `hello.txt` exists at the repo root containing exactly the text `hello world`\n\n## Non-goals\n- No subdirectory creation\n- No additional content or formatting in the file\n\n## Files to change\n**New:**\n- `hello.txt`\n\n**Modify:**\n- None\n\n## Commands\n- **lint:** None\n- **test:** None\n- **build/typecheck:** None\n\n## Interfaces / I/O\n- File content must be exactly: `hello world` (no trailing newline or extra characters)\n\n## Behaviour rules / Edge cases\n- If `hello.txt` already exists, overwrite it with the exact content\n\n## Acceptance checklist\n- [ ] `hello.txt` exists at the repo root\n- [ ] File content is exactly `hello world`\n- [ ] No extra whitespace, newlines, or characters beyond `hello world`\n\n## Assumptions\n- \"hello world\" means the literal string without a trailing newline\n\n## Stop conditions\n- `hello.txt` exists at repo root with exact content `hello world`\n\n## Workflow instructions for Codex\nFor every `llemy-todo` issue:\n- Work on current branch\n- Implement the issue exactly as written\n- Do not commit all changes\n- Do not push the branch to origin\n- Add a completion comment summarising changes\n- Label the issue `llemy-done` and remove `llemy-todo`\n- Do not merge\n- Do not use sandbox CLI - always use the real `gh` CLI tool"
+    }
+  ]
+}

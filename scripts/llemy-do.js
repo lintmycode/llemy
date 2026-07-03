@@ -46,12 +46,42 @@ function createLogger(logPath) {
   };
 }
 
-function runStep(scriptName, logger) {
+function parseArgs(argv) {
+  const out = { issueId: '' };
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === '-id' || arg === '--id') {
+      const value = argv[i + 1];
+      if (!value) {
+        die(`${arg} requires an issue number`);
+      }
+      out.issueId = value;
+      i += 1;
+      continue;
+    }
+
+    const inlineMatch = arg.match(/^--?id=(.+)$/);
+    if (inlineMatch) {
+      out.issueId = inlineMatch[1];
+      continue;
+    }
+
+    die(`Unknown argument: ${arg}`);
+  }
+
+  if (out.issueId && !/^[1-9]\d*$/.test(out.issueId)) {
+    die(`Invalid issue id: ${out.issueId}`);
+  }
+
+  return out;
+}
+
+function runStep(scriptName, logger, env = process.env) {
   return new Promise((resolve, reject) => {
     logger.info(`Starting ${scriptName}`);
     const child = spawn(process.execPath, [join(__dirname, scriptName)], {
       cwd: process.cwd(),
-      env: process.env,
+      env,
       stdio: ['ignore', 'pipe', 'pipe']
     });
 
@@ -87,11 +117,17 @@ function runStep(scriptName, logger) {
 }
 
 async function main() {
+  const options = parseArgs(process.argv.slice(2));
   const logger = createLogger(join(process.cwd(), '.llemy', 'logs', 'do.log'));
   logger.info('Starting llemy-do flow');
   try {
+    const scanEnv = options.issueId ? { ...process.env, ISSUE_ID: options.issueId } : process.env;
+    if (options.issueId) {
+      logger.info(`Filtering to issue #${options.issueId}`);
+    }
+
     logger.info('Running scan-todo-issues.js');
-    await runStep('scan-todo-issues.js', logger);
+    await runStep('scan-todo-issues.js', logger, scanEnv);
 
     logger.info('Running process-todo-issues.js');
     await runStep('process-todo-issues.js', logger);

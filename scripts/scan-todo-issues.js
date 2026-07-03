@@ -100,6 +100,43 @@ async function fetchRepoIssues(repo, label, limit) {
   }));
 }
 
+async function fetchRepoIssue(repo, number, label) {
+  const json = await runGh([
+    'issue',
+    'view',
+    String(number),
+    '--repo',
+    repo,
+    '--json',
+    'number,title,url,updatedAt,labels,body,state'
+  ]);
+
+  let issue;
+  try {
+    issue = JSON.parse(json);
+  } catch {
+    throw new Error(`failed to parse gh issue JSON for #${number}`);
+  }
+
+  const labels = Array.isArray(issue.labels) ? issue.labels.map((l) => l.name).filter(Boolean) : [];
+  if (issue.state !== 'OPEN') {
+    throw new Error(`#${number} is not open`);
+  }
+  if (!labels.includes(label)) {
+    throw new Error(`#${number} does not have label ${label}`);
+  }
+
+  return {
+    repo,
+    number: issue.number,
+    title: issue.title,
+    url: issue.url,
+    updatedAt: issue.updatedAt,
+    labels,
+    body: typeof issue.body === 'string' ? issue.body : ''
+  };
+}
+
 async function runBatches(items, batchSize, worker) {
   const out = [];
   for (let i = 0; i < items.length; i += batchSize) {
@@ -143,6 +180,7 @@ async function main() {
   const concurrency = toPositiveInt(process.env.CONCURRENCY, 3);
   const outputFile = process.env.OUTPUT_FILE || join('.llemy', 'llemy-todo-issues.json');
   const taskDir = process.env.TASK_DIR || join('.llemy', 'tmp');
+  const issueId = String(process.env.ISSUE_ID || '').trim();
 
   await assertGhReady();
   const repos = [await resolveCurrentRepo()];
@@ -152,14 +190,23 @@ async function main() {
   const issuesByRepo = new Map();
   const errorsByRepo = new Map();
 
-  const settled = await runBatches(repos, concurrency, async (repo) => {
-    try {
-      const repoIssues = await fetchRepoIssues(repo, label, issueLimit);
-      return { repo, repoIssues };
-    } catch (error) {
-      return { repo, error: error.message };
-    }
-  });
+  const settled = issueId
+    ? await runBatches(repos, concurrency, async (repo) => {
+        try {
+          const repoIssue = await fetchRepoIssue(repo, issueId, label);
+          return { repo, repoIssues: [repoIssue] };
+        } catch (error) {
+          return { repo, error: error.message };
+        }
+      })
+    : await runBatches(repos, concurrency, async (repo) => {
+        try {
+          const repoIssues = await fetchRepoIssues(repo, label, issueLimit);
+          return { repo, repoIssues };
+        } catch (error) {
+          return { repo, error: error.message };
+        }
+      });
 
   for (const entry of settled) {
     if (entry.status !== 'fulfilled') {

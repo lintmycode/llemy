@@ -35,18 +35,21 @@ async function runGh(args) {
   return runCommand('gh', args);
 }
 
-function runClaude(prompt) {
-  const claudeEnv = { ...process.env };
-  delete claudeEnv.CLAUDECODE;
-  delete claudeEnv.CLAUDE_CODE_ENTRYPOINT;
-  delete claudeEnv.ANTHROPIC_API_KEY;
-  const result = spawnSync('claude', ['-p', '--dangerously-skip-permissions', prompt], {
+function runCodex(prompt) {
+  const args = ['exec', '--cd', process.cwd(), '--sandbox', 'workspace-write'];
+  const model = String(process.env.CODEX_MODEL || '').trim();
+  if (model) {
+    args.push('--model', model);
+  }
+  args.push(prompt);
+
+  const result = spawnSync('codex', args, {
     stdio: 'inherit',
     encoding: 'utf8',
-    env: claudeEnv
+    env: process.env
   });
   if (result.status !== 0) {
-    throw new Error(`Claude exited with code ${result.status}`);
+    throw new Error(`Codex exited with code ${result.status}`);
   }
 }
 
@@ -85,10 +88,10 @@ async function fetchIssue(repo, number) {
   return issue;
 }
 
-function assertClaudeReady() {
-  const result = spawnSync('claude', ['--version'], { encoding: 'utf8' });
+function assertCodexReady() {
+  const result = spawnSync('codex', ['--version'], { encoding: 'utf8' });
   if (result.status !== 0) {
-    die('claude CLI not available');
+    die('codex CLI not available');
   }
 }
 
@@ -171,7 +174,7 @@ async function main() {
   }
 
   await assertGhReady();
-  assertClaudeReady();
+  assertCodexReady();
 
   const failures = [];
   let completed = 0;
@@ -183,11 +186,11 @@ async function main() {
       const issue = await fetchIssue(entry.repo, entry.number);
       const prompt = buildImplementationPrompt(issue, entry.repo, executorPolicyContent);
 
-      process.stdout.write(`[${tag}] Running Claude implementation...\n`);
-      runClaude(prompt);
+      process.stdout.write(`[${tag}] Running Codex implementation...\n`);
+      runCodex(prompt);
 
       process.stdout.write(`[${tag}] Adding completion comment...\n`);
-      const comment = `✅ Implementation completed by Claude`;
+      const comment = `Implementation completed by Codex`;
       await addIssueComment(entry.repo, entry.number, comment);
 
       process.stdout.write(`[${tag}] Relabeling issue...\n`);

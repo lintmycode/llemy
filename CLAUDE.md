@@ -17,7 +17,8 @@ GitHub issue (llemy-done)
 ```bash
 node scripts/llemy-init.js   # init repo: create .llemy/ dirs + GitHub labels
 node scripts/llemy-plan.js   # process llemy-plan issues → Claude produces todo files (fully automated)
-node scripts/llemy-do.js     # process llemy-todo issues → Claude implements (fully automated)
+node scripts/llemy-do.js     # process llemy-todo issues → Codex implements (fully automated)
+llemy do -id 123             # process one specific llemy-todo issue
 ```
 
 ## Issue Labels
@@ -42,7 +43,9 @@ node scripts/llemy-do.js     # process llemy-todo issues → Claude implements (
 
 ## Implementation
 
-Both `llemy plan` and `llemy do` invoke `claude -p --dangerously-skip-permissions` as a subprocess. The subprocess env strips `CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, and `ANTHROPIC_API_KEY` to ensure subscription auth is used (not any API key loaded from `.llemy/.env`).
+`llemy plan` invokes `claude -p --dangerously-skip-permissions` as a subprocess. The subprocess env strips `CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, and `ANTHROPIC_API_KEY` to ensure subscription auth is used (not any API key loaded from `.llemy/.env`).
+
+`llemy do` invokes `codex exec --cd <repo> --sandbox workspace-write` as a subprocess. Set `CODEX_MODEL` in the environment to pass a specific model to Codex.
 
 ## TODOs
 

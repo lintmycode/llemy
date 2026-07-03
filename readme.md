@@ -111,29 +111,22 @@ Process GitHub issues labeled `llemy-todo` and implement them using Codex.
 
 **Steps:**
 
-1. **Start the script in a Codex session:**
-   ```run
+1. **Start the script in a terminal:**
+   ```bash
    node scripts/llemy-do.js
    ```
 
+   To implement a single todo issue:
+   ```bash
+   llemy do -id 123
+   ```
+
 2. **The script will:**
-   - Scan repos for `llemy-todo` issues
+   - Scan repos for `llemy-todo` issues, or fetch only the issue passed with `-id`
    - Fetch each issue and create a todo file: `.llemy/todo/<repo>_<issue>_todo.md`
-   - **PAUSE** and print an instruction like:
-     ```
-     [repo#123] ⏸️  Paused - run this in Codex to continue:
-     [repo#123]    "Implement this plan: [todo file content]"
-     ```
-
-3. **In Codex, send the printed instruction:**
-   - Copy the instruction from the terminal
-   - Paste it into Codex chat
-   - Codex implements the code according to the plan
-
-4. **Script auto-resumes:**
-   - Detects the completion comment on the issue
-   - Verifies `llemy-done` label is applied
-   - Continues to next issue
+   - Run `codex exec` with the issue plan and local executor policy
+   - Add a completion comment
+   - Relabel the issue as `llemy-done`
 
 **Output:**
 - All output logged to `.llemy/logs/do.log`
@@ -142,6 +135,6 @@ Process GitHub issues labeled `llemy-todo` and implement them using Codex.
 **Requirements:**
 - `gh` CLI authenticated
 - Run from inside the target GitHub repo (or set `LLEMY_REPO=owner/name`)
-- Codex running and ready to implement
+- Codex CLI authenticated and available on `PATH`
 
-**Note:** Codex should follow the workflow instructions in each todo file to create branch, implement, commit, push, and label the issue.
+**Optional:** Set `CODEX_MODEL` to choose the model used by `codex exec`.

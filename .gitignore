@@ -7,8 +7,9 @@
 .env.local
 
 # LLEMY working directories
-.llemy/
-!.llemy/.gitkeep
+.llemy/plan/
+.llemy/todo/
+.llemy/tmp/
 
 # Logs
 logs/
